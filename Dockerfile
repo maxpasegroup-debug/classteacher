@@ -5,6 +5,7 @@ WORKDIR /app
 ENV NODE_ENV=production
 
 COPY package*.json ./
+COPY prisma/schema.prisma ./prisma/schema.prisma
 RUN npm ci
 
 COPY . .
