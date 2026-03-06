@@ -5,12 +5,11 @@ WORKDIR /app
 ENV NODE_ENV=production
 
 COPY package*.json ./
-COPY prisma/schema.prisma ./prisma/schema.prisma
-RUN npm ci
+RUN npm ci --ignore-scripts
 
 COPY . .
 
-RUN npm run build
+RUN npm run prisma:generate && npm run build
 
 EXPOSE 3000
 
