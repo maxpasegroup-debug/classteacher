@@ -6,7 +6,7 @@ import { AppUser, AuthResponse, WalletResponse } from "@/lib/contracts";
 type AppSessionContextValue = {
   user: AppUser | null;
   isReady: boolean;
-  signup: (payload: { name: string; email: string; className: string; goal: string; password: string }) => Promise<{ ok: boolean; message?: string }>;
+  signup: (payload: { name: string; email: string; className: string; goal: string; password: string; inviteCode?: string }) => Promise<{ ok: boolean; message?: string }>;
   login: (payload: { email: string; password: string }) => Promise<{ ok: boolean; message?: string }>;
   logout: () => Promise<void>;
   addCredits: (amount: number) => Promise<{ ok: boolean; message?: string }>;
@@ -76,11 +76,11 @@ export function AppSessionProvider({ children }: { children: React.ReactNode }) 
     () => ({
       user,
       isReady,
-      signup: async ({ name, email, className, goal, password }) => {
+      signup: async ({ name, email, className, goal, password, inviteCode }) => {
         const response = await fetch("/api/auth/signup", {
           method: "POST",
           headers: buildAuthHeaders(true),
-          body: JSON.stringify({ name, email, className, goal, password })
+          body: JSON.stringify({ name, email, className, goal, password, inviteCode: inviteCode ?? undefined })
         });
         const data = (await response.json()) as AuthResponse;
         if (!data.ok) return { ok: false, message: data.message };

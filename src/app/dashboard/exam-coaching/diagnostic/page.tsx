@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { Hourglass, Target, AlertCircle } from "lucide-react";
 import { useAppSession } from "@/components/providers/AppSessionProvider";
@@ -18,14 +18,16 @@ const categoryExamMap: Record<string, string> = {
 export default function DiagnosticPage() {
   const { user, getAuthHeaders, refreshUser } = useAppSession();
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const category = searchParams.get("category") || "engineering";
+  const [category, setCategory] = useState("engineering");
   const [attemptId, setAttemptId] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    if (!user) return;
-  }, [user]);
+    if (typeof window === "undefined") return;
+    const params = new URLSearchParams(window.location.search);
+    const fromUrl = params.get("category");
+    if (fromUrl) setCategory(fromUrl);
+  }, []);
 
   async function startDiagnostic() {
     if (!user) {

@@ -8,6 +8,10 @@ export type AppUser = {
   role: "STUDENT" | "TEACHER" | "COUNSELOR" | "ADMIN";
   institutionId?: string | null;
   institutionName?: string | null;
+  inviteCode?: string | null;
+  district?: string | null;
+  state?: string | null;
+  school?: string | null;
 };
 
 export type AuthSuccessResponse = {
@@ -246,4 +250,13 @@ export type TrainingPlanItem = {
   planData: unknown;
   createdAt: string;
   updatedAt: string;
+};
+
+export type TopicPerformanceItem = {
+  id: string;
+  subject: string;
+  topic: string;
+  accuracy: number;
+  averageTime: number;
+  attempts: number;
 };

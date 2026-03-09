@@ -53,6 +53,10 @@ model User {
   passwordHash      String
   role              Role                 @default(STUDENT)
   institutionId     String?
+  district          String?
+  state             String?
+  school            String?
+  inviteCode        String?              @unique
   createdAt         DateTime             @default(now())
   updatedAt         DateTime             @updatedAt
   institution       Institution?         @relation(fields: [institutionId], references: [id], onDelete: SetNull)
@@ -79,6 +83,30 @@ model User {
   auditLogs         AuditLog[]
   passwordResets    PasswordResetToken[]
   trainingPlans     TrainingPlan[]
+  topicPerformance  TopicPerformance[]
+  practiceStreak    PracticeStreak?
+  referralsGiven    Referral[]          @relation("Referrer")
+  referralsReceived Referral[]          @relation("Referred")
+}
+
+model PracticeStreak {
+  id             String   @id @default(cuid())
+  userId         String   @unique
+  lastPracticeAt DateTime @default(now())
+  streakCount    Int      @default(0)
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Referral {
+  id              String   @id @default(cuid())
+  referrerId      String
+  referredUserId  String
+  creditsAwarded Int      @default(50)
+  createdAt       DateTime @default(now())
+  referrer        User     @relation("Referrer", fields: [referrerId], references: [id], onDelete: Cascade)
+  referred        User     @relation("Referred", fields: [referredUserId], references: [id], onDelete: Cascade)
+
+  @@unique([referredUserId])
 }
 
 model Session {
@@ -376,4 +404,19 @@ model TrainingPlan {
   user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, examCategory])
+}
+
+model TopicPerformance {
+  id          String   @id @default(cuid())
+  userId      String
+  subject     String
+  topic       String
+  accuracy    Float    @default(0)
+  averageTime Float    @default(0) // seconds
+  attempts    Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, subject, topic])
 }

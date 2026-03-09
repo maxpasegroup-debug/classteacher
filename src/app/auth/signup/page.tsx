@@ -9,6 +9,7 @@ export default function SignupPage() {
   const { signup } = useAppSession();
   const router = useRouter();
   const [returnTo, setReturnTo] = useState("/dashboard");
+  const [inviteCode, setInviteCode] = useState("");
 
   const [name, setName] = useState("");
   const [className, setClassName] = useState("");
@@ -19,8 +20,10 @@ export default function SignupPage() {
   const [error, setError] = useState("");
 
   useEffect(() => {
+    if (typeof window === "undefined") return;
     const params = new URLSearchParams(window.location.search);
     setReturnTo(params.get("returnTo") || "/dashboard");
+    setInviteCode(params.get("ref")?.trim() ?? "");
   }, []);
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
@@ -32,7 +35,7 @@ export default function SignupPage() {
       return;
     }
 
-    const result = await signup({ name, className, goal, email, password });
+    const result = await signup({ name, className, goal, email, password, inviteCode: inviteCode || undefined });
     if (!result.ok) {
       setError(result.message || "Unable to create account.");
       return;

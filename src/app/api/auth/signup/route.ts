@@ -18,6 +18,7 @@ export async function POST(request: Request) {
     className?: string;
     goal?: string;
     password?: string;
+    inviteCode?: string;
   };
 
   if (!body.name || !body.email || !body.className || !body.goal || !body.password) {
@@ -29,7 +30,8 @@ export async function POST(request: Request) {
     email: body.email,
     className: body.className,
     goal: body.goal,
-    password: body.password
+    password: body.password,
+    inviteCode: body.inviteCode
   });
 
   if (!result.ok) {

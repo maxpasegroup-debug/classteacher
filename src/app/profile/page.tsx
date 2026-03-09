@@ -7,11 +7,15 @@ import { useAppSession } from "@/components/providers/AppSessionProvider";
 import { ActivityItem, CourseEnrollmentItem, CreditTransactionItem, ExamAttemptItem } from "@/lib/contracts";
 
 export default function ProfilePage() {
-  const { user, logout, addCredits, getAuthHeaders } = useAppSession();
+  const { user, logout, addCredits, getAuthHeaders, refreshUser } = useAppSession();
   const [history, setHistory] = useState<CreditTransactionItem[]>([]);
   const [activity, setActivity] = useState<ActivityItem[]>([]);
   const [attempts, setAttempts] = useState<ExamAttemptItem[]>([]);
   const [enrollments, setEnrollments] = useState<CourseEnrollmentItem[]>([]);
+  const [district, setDistrict] = useState("");
+  const [state, setState] = useState("");
+  const [school, setSchool] = useState("");
+  const [profileSaving, setProfileSaving] = useState(false);
 
   useEffect(() => {
     async function loadHistory() {
@@ -41,6 +45,14 @@ export default function ProfilePage() {
 
     loadHistory();
   }, [getAuthHeaders, user?.credits]);
+
+  useEffect(() => {
+    if (user) {
+      setDistrict(user.district ?? "");
+      setState(user.state ?? "");
+      setSchool(user.school ?? "");
+    }
+  }, [user?.district, user?.state, user?.school]);
 
   if (!user) {
     return (
@@ -93,6 +105,55 @@ export default function ProfilePage() {
               <span className="font-medium text-slate-800">Wallet:</span> {user.credits} credits
             </p>
           </div>
+        </section>
+
+        <section className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
+          <h2 className="text-sm font-semibold text-slate-900">Location (for leaderboards)</h2>
+          <p className="mt-1 text-xs text-slate-600">Optional. Used for school, district and state leaderboards.</p>
+          <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-3">
+            <input
+              value={state}
+              onChange={(e) => setState(e.target.value)}
+              placeholder="State (e.g. Kerala)"
+              className="rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-cyan-500"
+            />
+            <input
+              value={district}
+              onChange={(e) => setDistrict(e.target.value)}
+              placeholder="District (e.g. Thrissur)"
+              className="rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-cyan-500"
+            />
+            <input
+              value={school}
+              onChange={(e) => setSchool(e.target.value)}
+              placeholder="School name"
+              className="rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-cyan-500"
+            />
+          </div>
+          <button
+            type="button"
+            disabled={profileSaving}
+            onClick={async () => {
+              setProfileSaving(true);
+              try {
+                const res = await fetch("/api/profile/me", {
+                  method: "PATCH",
+                  headers: getAuthHeaders(true),
+                  body: JSON.stringify({ state: state || null, district: district || null, school: school || null })
+                });
+                const data = (await res.json()) as { ok: boolean; message?: string };
+                if (data.ok) {
+                  await refreshUser();
+                  alert("Location saved.");
+                } else alert(data.message || "Failed to save.");
+              } finally {
+                setProfileSaving(false);
+              }
+            }}
+            className="mt-2 rounded-full bg-cyan-700 px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-60"
+          >
+            {profileSaving ? "Saving…" : "Save location"}
+          </button>
         </section>
 
         <section className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
