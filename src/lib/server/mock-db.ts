@@ -13,7 +13,8 @@ import {
   ExamAttemptItem,
   SkillProgramItem,
   StudyHelpSlot,
-  TeacherDashboardData
+  TeacherDashboardData,
+  TrainingPlanItem
 } from "@/lib/contracts";
 import { careerPathways, courses, examCategories, exams, studyHelpPlans } from "@/lib/server/catalog";
 import { prisma } from "@/lib/server/db";
@@ -526,6 +527,65 @@ export async function submitExamResult(token: string | null, attemptId: string, 
     }
   });
   return { ok: true as const, message: "Exam result submitted." };
+}
+
+export async function getTrainingPlan(token: string | null, examCategory: string) {
+  const user = await getAuthorizedUser(token);
+  if (!user) return { ok: false as const, message: "Unauthorized." };
+
+  const plan = await prisma.trainingPlan.findUnique({
+    where: {
+      userId_examCategory: {
+        userId: user.id,
+        examCategory
+      }
+    }
+  });
+
+  if (!plan) {
+    return { ok: true as const, plan: null as TrainingPlanItem | null };
+  }
+
+  const mapped: TrainingPlanItem = {
+    id: plan.id,
+    examCategory: plan.examCategory,
+    planData: plan.planData,
+    createdAt: plan.createdAt.toISOString(),
+    updatedAt: plan.updatedAt.toISOString()
+  };
+  return { ok: true as const, plan: mapped };
+}
+
+export async function saveTrainingPlan(token: string | null, examCategory: string, planData: unknown) {
+  const user = await getAuthorizedUser(token);
+  if (!user) return { ok: false as const, message: "Unauthorized." };
+
+  const plan = await prisma.trainingPlan.upsert({
+    where: {
+      userId_examCategory: {
+        userId: user.id,
+        examCategory
+      }
+    },
+    create: {
+      userId: user.id,
+      examCategory,
+      planData
+    },
+    update: {
+      planData
+    }
+  });
+
+  const mapped: TrainingPlanItem = {
+    id: plan.id,
+    examCategory: plan.examCategory,
+    planData: plan.planData,
+    createdAt: plan.createdAt.toISOString(),
+    updatedAt: plan.updatedAt.toISOString()
+  };
+
+  return { ok: true as const, plan: mapped };
 }
 
 export async function getCourseEnrollments(token: string | null) {

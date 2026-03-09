@@ -27,9 +27,9 @@ const modules = [
     gradient: "from-sky-500 to-cyan-500"
   },
   {
-    title: "Exam Practice",
-    description: "AI powered test preparation",
-    href: "/dashboard/exam-practice",
+    title: "AI Exam Coaching",
+    description: "Entrance exam diagnostics and training",
+    href: "/dashboard/exam-coaching",
     icon: Target,
     gradient: "from-emerald-500 to-lime-500"
   },
@@ -83,7 +83,7 @@ export default function DashboardPage() {
   }
 
   return (
-    <main className="space-y-4 bg-slate-50 px-4 py-5">
+    <main className="space-y-4 bg-slate-50 px-4 py-5 md:px-0">
       <motion.section
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
@@ -127,6 +127,27 @@ export default function DashboardPage() {
           </p>
         </div>
       </motion.section>
+
+      {/* AI Exam Coaching highlight banner (desktop + mobile) */}
+      <section className="rounded-3xl border border-emerald-100 bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500 p-4 text-white shadow-md">
+        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wide text-emerald-50">New</p>
+            <h2 className="mt-1 text-lg font-semibold">AI Exam Coaching</h2>
+            <p className="mt-1 text-sm text-emerald-50">
+              Train for entrance exams with personalized diagnostics, SWOT and weekly practice plans.
+            </p>
+            <p className="mt-2 text-xs font-medium text-emerald-50/90">NEET • KEAM • JEE • CUET</p>
+          </div>
+          <button
+            type="button"
+            onClick={() => handleProtectedAction("/dashboard/exam-coaching")}
+            className="inline-flex items-center justify-center rounded-full bg-white px-4 py-2 text-xs font-semibold text-emerald-700 shadow-sm"
+          >
+            Start Training →
+          </button>
+        </div>
+      </section>
 
       {!user ? (
         <section className="flex items-center justify-between gap-3 rounded-2xl border border-cyan-100 bg-cyan-50 p-3 text-sm">
@@ -181,7 +202,7 @@ export default function DashboardPage() {
         </div>
       </motion.section>
 
-      <section className="grid grid-cols-2 gap-3">
+      <section className="grid grid-cols-2 gap-3 md:grid-cols-4">
         {modules.map((module, index) => {
           const Icon = module.icon;
           return (
@@ -225,7 +246,7 @@ export default function DashboardPage() {
         </div>
         <button
           type="button"
-          onClick={() => handleProtectedAction("/dashboard/exam-practice")}
+          onClick={() => handleProtectedAction("/dashboard/exam-coaching")}
           className="mt-3 rounded-full bg-white px-4 py-2 text-xs font-semibold text-teal-700 shadow-sm"
         >
           {user ? "Start Test" : "Create account to start"}
@@ -236,7 +257,7 @@ export default function DashboardPage() {
         <div className="flex items-center justify-between">
           <h3 className="text-base font-semibold text-slate-900">Continue Practice</h3>
         </div>
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-2 gap-3 lg:grid-cols-3">
           {inProgressTests.map((test, index) => (
             <motion.article
               key={test.name}
@@ -253,9 +274,9 @@ export default function DashboardPage() {
                   style={{ width: `${test.progress}%` }}
                 />
               </div>
-              <button
+                <button
                 type="button"
-                onClick={() => handleProtectedAction("/dashboard/exam-practice")}
+                onClick={() => handleProtectedAction("/dashboard/exam-coaching")}
                 className="mt-3 rounded-full bg-slate-900 px-3 py-1.5 text-xs font-medium text-white"
               >
                 {user ? "Resume" : "Unlock"}
@@ -265,14 +286,14 @@ export default function DashboardPage() {
         </div>
       </section>
 
-      <section className="space-y-2 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+      <section className="space-y-2 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm lg:col-span-2 lg:row-span-2 lg:self-start lg:[grid-area:leaderboard]">
         <div className="flex items-center justify-between">
           <h3 className="text-base font-semibold text-slate-900">Leaderboard</h3>
           <button type="button" className="text-xs font-medium text-teal-700">
             View all
           </button>
         </div>
-        <ul className="space-y-2">
+        <ul className="mt-2 space-y-2 md:max-h-64 md:overflow-auto">
           {leaderboard.map((item) => (
             <li key={item.rank} className="flex items-center justify-between rounded-xl bg-slate-50 px-3 py-2">
               <div className="flex items-center gap-2">
@@ -289,7 +310,7 @@ export default function DashboardPage() {
 
       <section className="space-y-2">
         <h3 className="text-base font-semibold text-slate-900">Skill Spotlight</h3>
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-2 gap-3 lg:grid-cols-3">
           {skillSpotlight.map((skill, index) => {
             const Icon = skill.icon;
             return (

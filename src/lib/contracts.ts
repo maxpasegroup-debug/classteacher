@@ -239,3 +239,11 @@ export type AuditLogItem = {
   payload: string | null;
   createdAt: string;
 };
+
+export type TrainingPlanItem = {
+  id: string;
+  examCategory: string;
+  planData: unknown;
+  createdAt: string;
+  updatedAt: string;
+};

@@ -75,7 +75,7 @@ export default function ProfilePage() {
   return (
     <>
       <Header title="Profile" subtitle="Student details and account settings" />
-      <main className="space-y-4 px-4 py-5">
+      <main className="space-y-4 px-4 py-5 md:px-0">
         <section className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
           <p className="text-xs font-medium uppercase tracking-wide text-slate-500">Student Profile Card</p>
           <h2 className="mt-2 text-lg font-semibold text-slate-900">{user.name}</h2>
@@ -97,7 +97,7 @@ export default function ProfilePage() {
 
         <section className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
           <h2 className="text-sm font-semibold text-slate-900">Progress Reports</h2>
-          <div className="mt-3 grid grid-cols-3 gap-2">
+          <div className="mt-3 grid grid-cols-3 gap-2 md:grid-cols-3">
             <article className="rounded-2xl bg-slate-50 p-3 text-center">
               <p className="text-lg font-semibold text-slate-900">{attempts.length}</p>
               <p className="text-xs text-slate-500">Tests Completed</p>

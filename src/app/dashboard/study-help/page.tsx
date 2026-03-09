@@ -75,7 +75,7 @@ export default function StudyHelpPage() {
   }
 
   return (
-    <main className="space-y-4 px-4 py-5">
+    <main className="space-y-4 px-4 py-5 md:px-0">
       <section className="rounded-3xl bg-gradient-to-br from-sky-500 to-cyan-500 p-4 text-white shadow-md">
         <div className="flex items-center gap-2">
           <MessageCircleQuestion size={18} />
@@ -87,7 +87,7 @@ export default function StudyHelpPage() {
         </p>
       </section>
 
-      <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+      <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm md:grid md:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] md:gap-4">
         <h2 className="text-sm font-semibold text-slate-900">Live Tuition Bookings</h2>
         <div className="mt-3 grid grid-cols-3 gap-2">
           {plans.map((plan) => (
@@ -144,7 +144,7 @@ export default function StudyHelpPage() {
         </ul>
       </section>
 
-      <section className="grid grid-cols-2 gap-3">
+      <section className="grid grid-cols-2 gap-3 md:grid-cols-4">
         <article className="rounded-2xl border border-slate-200 bg-white p-3 shadow-sm">
           <PenLine size={16} className="text-cyan-700" />
           <p className="mt-2 text-sm font-semibold text-slate-900">Recent Doubts</p>

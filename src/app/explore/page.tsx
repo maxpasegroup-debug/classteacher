@@ -23,7 +23,7 @@ export default function ExplorePage() {
   return (
     <>
       <Header title="Explore Roots" subtitle="Discover trusted learning institutions" />
-      <main className="space-y-4 px-4 py-5">
+      <main className="space-y-4 px-4 py-5 md:px-0">
         <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
           <p className="text-xs font-medium uppercase tracking-wide text-slate-500">Roots Education Hub</p>
           <h2 className="mt-2 text-xl font-semibold text-slate-900">Building Futures Through Knowledge</h2>
@@ -38,20 +38,21 @@ export default function ExplorePage() {
             <span className="text-xs text-slate-500">{institutions.length} available</span>
           </div>
 
-          <div className="-mx-4 flex snap-x snap-mandatory gap-3 overflow-x-auto px-4 pb-2">
+          {/* Mobile: horizontal scroll, Desktop: grid */}
+          <div className="-mx-4 flex snap-x snap-mandatory gap-3 overflow-x-auto px-4 pb-2 md:mx-0 md:grid md:snap-none md:overflow-visible md:px-0 md:pb-0 md:grid-cols-2 lg:grid-cols-3">
             {institutions.map((institution) => (
               <article
                 key={institution.title}
-                className="w-[85%] shrink-0 snap-start rounded-3xl border border-slate-200 bg-white p-4 shadow-sm"
+                className="w-[85%] shrink-0 snap-start rounded-3xl border border-slate-200 bg-white p-4 shadow-sm md:w-full md:shrink md:snap-none"
               >
-                <div className="h-36 rounded-2xl bg-gradient-to-br from-slate-100 to-slate-200" />
+                <div className="h-36 rounded-2xl bg-gradient-to-br from-slate-100 to-slate-200 md:h-40" />
                 <h4 className="mt-4 text-base font-semibold text-slate-900">{institution.title}</h4>
                 <p className="mt-2 text-sm leading-5 text-slate-600">{institution.description}</p>
                 <button
                   type="button"
                   className="mt-4 rounded-full bg-slate-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-slate-800"
                 >
-                  Explore
+                  Explore programs
                 </button>
               </article>
             ))}

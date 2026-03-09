@@ -24,7 +24,7 @@ export default function JourneyPage() {
     <>
       <Header title="My Journey" subtitle="Track your learning path level by level" />
 
-      <main className="space-y-4 px-4 py-5">
+      <main className="space-y-4 px-4 py-5 md:px-0">
         <motion.section
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
@@ -55,7 +55,7 @@ export default function JourneyPage() {
           </div>
         </motion.section>
 
-        <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+        <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm md:col-span-2">
           <div className="mb-3 flex items-center justify-between">
             <h2 className="text-sm font-semibold text-slate-900">Journey Map</h2>
             <span className="text-xs text-slate-500">Vertical level path</span>

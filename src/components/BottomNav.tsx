@@ -20,7 +20,7 @@ export default function BottomNav() {
   }
 
   return (
-    <nav className="pointer-events-none fixed inset-x-0 bottom-3 z-20 px-3 sm:bottom-4">
+    <nav className="pointer-events-none fixed inset-x-0 bottom-3 z-20 px-3 sm:bottom-4 md:hidden">
       <div className="mx-auto w-full max-w-md">
         <div className="pointer-events-auto rounded-3xl border border-slate-200/80 bg-white/95 p-1.5 shadow-lg shadow-slate-200/70 backdrop-blur">
           <div className="grid grid-cols-4 gap-1">
