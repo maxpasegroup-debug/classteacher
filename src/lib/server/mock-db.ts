@@ -626,10 +626,15 @@ export async function getTrainingPlan(token: string | null, examCategory: string
   return { ok: true as const, plan: mapped };
 }
 
-export async function saveTrainingPlan(token: string | null, examCategory: string, planData: Prisma.InputJsonValue) {
+export async function saveTrainingPlan(
+  token: string | null,
+  examCategory: string,
+  planData: Prisma.InputJsonValue | unknown
+) {
   const user = await getAuthorizedUser(token);
   if (!user) return { ok: false as const, message: "Unauthorized." };
 
+  const jsonPlan: Prisma.InputJsonValue = planData as Prisma.InputJsonValue;
   const plan = await prisma.trainingPlan.upsert({
     where: {
       userId_examCategory: {
@@ -640,10 +645,10 @@ export async function saveTrainingPlan(token: string | null, examCategory: strin
     create: {
       userId: user.id,
       examCategory,
-      planData
+      planData: jsonPlan
     },
     update: {
-      planData
+      planData: jsonPlan
     }
   });
 
