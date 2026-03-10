@@ -13,6 +13,7 @@ export default function TeacherHubPage() {
   const [students, setStudents] = useState<Array<{ id: string; name: string; className: string }>>([]);
   const [studentId, setStudentId] = useState("");
   const [summary, setSummary] = useState("");
+  const [message, setMessage] = useState<string | null>(null);
 
   useEffect(() => {
     if (!user) {
@@ -52,10 +53,13 @@ export default function TeacherHubPage() {
       })
     });
     if (!response.ok) {
-      alert("Unable to create intervention.");
+      setMessage("Unable to create intervention.");
+      setTimeout(() => setMessage(null), 4000);
       return;
     }
     setSummary("");
+    setMessage("Intervention task created.");
+    setTimeout(() => setMessage(null), 3000);
     const dashboardResponse = await fetch("/api/teacher/dashboard");
     if (dashboardResponse.ok) {
       const data = (await dashboardResponse.json()) as { dashboard: TeacherDashboardData };
@@ -82,6 +86,11 @@ export default function TeacherHubPage() {
 
   return (
     <main className="space-y-4 px-4 py-5">
+      {message && (
+        <div className={`rounded-xl border px-4 py-2 text-sm font-medium ${message.includes("Unable") ? "border-rose-200 bg-rose-50 text-rose-800" : "border-emerald-200 bg-emerald-50 text-emerald-800"}`}>
+          {message}
+        </div>
+      )}
       <section className="rounded-3xl bg-gradient-to-r from-indigo-600 to-cyan-600 p-4 text-white">
         <p className="text-xs font-semibold uppercase tracking-wide text-white/80">Teacher Hub</p>
         <h1 className="mt-1 text-lg font-semibold">{dashboard?.teacher.name || user.name}</h1>

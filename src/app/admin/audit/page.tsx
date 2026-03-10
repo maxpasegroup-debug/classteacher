@@ -8,6 +8,7 @@ export default function AdminAuditPage() {
   const { user, getAuthHeaders } = useAppSession();
   const [logs, setLogs] = useState<AuditLogItem[]>([]);
   const [retentionDays, setRetentionDays] = useState("90");
+  const [message, setMessage] = useState<string | null>(null);
 
   const loadLogs = useCallback(async () => {
     const response = await fetch("/api/admin/audit-logs?take=150");
@@ -29,11 +30,13 @@ export default function AdminAuditPage() {
       body: JSON.stringify({ olderThanDays: Number(retentionDays) || 90 })
     });
     if (!response.ok) {
-      alert("Unable to prune audit logs.");
+      setMessage("Unable to prune audit logs.");
+      setTimeout(() => setMessage(null), 4000);
       return;
     }
     await loadLogs();
-    alert("Audit log retention prune completed.");
+    setMessage("Audit log retention prune completed.");
+    setTimeout(() => setMessage(null), 3000);
   }
 
   if (!user || user.role !== "ADMIN") {
@@ -42,6 +45,11 @@ export default function AdminAuditPage() {
 
   return (
     <main className="space-y-4 px-4 py-5">
+      {message && (
+        <div className={`rounded-xl border px-4 py-2 text-sm font-medium ${message.includes("Unable") ? "border-rose-200 bg-rose-50 text-rose-800" : "border-emerald-200 bg-emerald-50 text-emerald-800"}`}>
+          {message}
+        </div>
+      )}
       <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
         <div className="flex items-center justify-between gap-3">
           <div>

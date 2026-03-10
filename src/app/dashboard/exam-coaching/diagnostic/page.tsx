@@ -10,6 +10,7 @@ const categoryExamMap: Record<string, string> = {
   medical: "ex-kerala-eng",
   engineering: "ex-kerala-eng",
   kerala: "ex-kerala-eng",
+  keam: "ex-kerala-eng",
   national: "ex-all-india-apt",
   international: "ex-lang-memory",
   aptitude: "ex-all-india-apt"
@@ -21,6 +22,7 @@ export default function DiagnosticPage() {
   const [category, setCategory] = useState("engineering");
   const [attemptId, setAttemptId] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [message, setMessage] = useState<string | null>(null);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -42,12 +44,13 @@ export default function DiagnosticPage() {
     });
     const result = (await response.json()) as { ok: boolean; message?: string };
     if (!response.ok || !result.ok) {
-      alert(result.message || "Unable to start diagnostic.");
+      setMessage(result.message || "Unable to start diagnostic.");
+      setTimeout(() => setMessage(null), 4000);
       return;
     }
     await refreshUser();
-    // In a real system we would navigate into a full exam UI; for now we simulate attempt id as handled on submit.
-    alert("Diagnostic started. When you are ready, submit to generate your coaching plan.");
+    setMessage("Diagnostic started. When you are ready, click Submit Diagnostic to generate your coaching plan.");
+    setTimeout(() => setMessage(null), 5000);
   }
 
   async function completeDiagnostic() {
@@ -57,13 +60,15 @@ export default function DiagnosticPage() {
       // For now we simulate: pick the latest attempt as the diagnostic and assign a score.
       const attemptsResponse = await fetch("/api/exam/attempts");
       if (!attemptsResponse.ok) {
-        alert("Unable to load attempts.");
+        setMessage("Unable to load attempts.");
+        setTimeout(() => setMessage(null), 4000);
         return;
       }
       const data = (await attemptsResponse.json()) as { attempts: Array<{ id: string }> };
       const latest = data.attempts?.[0];
       if (!latest) {
-        alert("No diagnostic attempt found. Please start the diagnostic first.");
+        setMessage("No diagnostic attempt found. Please start the diagnostic first.");
+        setTimeout(() => setMessage(null), 4000);
         return;
       }
       setAttemptId(latest.id);
@@ -75,10 +80,11 @@ export default function DiagnosticPage() {
       });
       const result = (await response.json()) as { ok: boolean; message?: string };
       if (!response.ok || !result.ok) {
-        alert(result.message || "Unable to submit diagnostic.");
+        setMessage(result.message || "Unable to submit diagnostic.");
+        setTimeout(() => setMessage(null), 4000);
         return;
       }
-      alert(`Diagnostic submitted. Score: ${score}%. Generating analysis and plan.`);
+      setMessage(`Diagnostic submitted. Score: ${score}%. Redirecting to your training plan...`);
       router.push(`/dashboard/exam-coaching/training-plan?category=${encodeURIComponent(category)}`);
     } finally {
       setSubmitting(false);
@@ -87,6 +93,17 @@ export default function DiagnosticPage() {
 
   return (
     <main className="space-y-4 px-4 py-5 md:px-0">
+      {message && (
+        <div
+          className={`rounded-xl border px-4 py-2 text-sm font-medium ${
+            message.includes("Unable") || message.includes("No diagnostic")
+              ? "border-rose-200 bg-rose-50 text-rose-800"
+              : "border-emerald-200 bg-emerald-50 text-emerald-800"
+          }`}
+        >
+          {message}
+        </div>
+      )}
       <motion.section
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
