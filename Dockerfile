@@ -17,4 +17,5 @@ ENV NODE_ENV=production
 
 EXPOSE 3000
 
-CMD ["sh", "-c", "mkdir -p data && npm run prisma:push && npm run db:seed && npm run start -- -p 3000"]
+# Force SQLite file: URL at runtime so platform-injected DATABASE_URL (e.g. Postgres) doesn't break Prisma
+CMD ["sh", "-c", "mkdir -p data && export DATABASE_URL=file:/app/data/dev.db && npm run prisma:push && npm run db:seed && npm run start -- -p 3000"]
