@@ -8,7 +8,7 @@ import { ExamAttemptItem, TrainingPlanItem } from "@/lib/contracts";
 import { buildCoachingSummary, buildSwotProfile, buildWeeklyTrainingPlan } from "@/lib/ai/exam-coach";
 
 export default function TrainingPlanPage() {
-  const { getAuthHeaders } = useAppSession();
+  const { getAuthHeaders, refreshUser } = useAppSession();
   const [category, setCategory] = useState("engineering");
   const [attempts, setAttempts] = useState<ExamAttemptItem[]>([]);
   const [plan, setPlan] = useState<TrainingPlanItem | null>(null);
@@ -180,7 +180,8 @@ export default function TrainingPlanPage() {
       return;
     }
     if (data.plan) setPlan(data.plan);
-    setToastMessage("Training plan saved to your profile.");
+    await refreshUser();
+    setToastMessage("Training plan saved to your profile. 40 credits used.");
     setTimeout(() => setToastMessage(null), 3000);
   }
 

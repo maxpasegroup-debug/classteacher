@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import Header from "@/components/Header";
 import ComingSoonCard from "@/components/ComingSoonCard";
+import CreditBadge, { LowCreditBanner } from "@/components/CreditBadge";
 import { useAppSession } from "@/components/providers/AppSessionProvider";
 import { ActivityItem, CourseEnrollmentItem, CreditTransactionItem, ExamAttemptItem } from "@/lib/contracts";
 
@@ -65,7 +66,7 @@ export default function ProfilePage() {
           <section className="rounded-3xl border border-cyan-100 bg-cyan-50 p-4 shadow-sm">
             <h2 className="text-base font-semibold text-slate-900">Create account to access profile</h2>
             <p className="mt-1 text-sm text-slate-700">
-              Progress reports, profiling insights, billing wallet, and history are available after signup.
+              Progress reports, profiling insights, credits, and history are available after signup.
             </p>
             <div className="mt-3 flex gap-2">
               <Link
@@ -105,7 +106,7 @@ export default function ProfilePage() {
               <span className="font-medium text-slate-800">Email:</span> {user.email}
             </p>
             <p>
-              <span className="font-medium text-slate-800">Wallet:</span> {user.credits} credits
+              <span className="font-medium text-slate-800">Credits remaining:</span> {user.credits.toLocaleString()}
             </p>
           </div>
         </section>
@@ -202,23 +203,27 @@ export default function ProfilePage() {
         </section>
 
         <section className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
-          <h2 className="text-sm font-semibold text-slate-900">Billing and Credit History</h2>
-          <button
-            type="button"
-            onClick={async () => {
-              const result = await addCredits(100);
-              if (!result.ok) {
-                setSuccessMessage(result.message || "Top-up failed.");
-                setTimeout(() => setSuccessMessage(null), 4000);
-                return;
-              }
-              setSuccessMessage("Top-up successful. 100 credits added.");
-              setTimeout(() => setSuccessMessage(null), 4000);
-            }}
-            className="mt-3 rounded-full bg-teal-700 px-3 py-1.5 text-xs font-semibold text-white"
-          >
-            Add 100 credits
-          </button>
+          <h2 className="text-sm font-semibold text-slate-900">Credits</h2>
+          <p className="mt-1 text-xs text-slate-600">Credits remaining: {user.credits.toLocaleString()}</p>
+          <div className="mt-3 flex flex-wrap gap-2">
+            <Link
+              href="/credits"
+              className="inline-block rounded-full bg-teal-700 px-3 py-1.5 text-xs font-semibold text-white"
+            >
+              Buy Credits
+            </Link>
+            <Link
+              href="/credits/history"
+              className="inline-block rounded-full border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700"
+            >
+              Credit History
+            </Link>
+          </div>
+          {user.credits < 100 && (
+            <div className="mt-3">
+              <LowCreditBanner credits={user.credits} />
+            </div>
+          )}
           {successMessage && (successMessage.includes("Top-up") || successMessage.includes("Failed")) && (
             <p className={`mt-2 text-xs font-medium ${successMessage.startsWith("Top-up") ? "text-emerald-600" : "text-rose-600"}`}>
               {successMessage}

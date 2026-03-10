@@ -20,8 +20,15 @@ import { careerPathways, courses, examCategories, exams, studyHelpPlans } from "
 import { prisma } from "@/lib/server/db";
 import { ApplicationStage, InterventionStatus, Prisma, ProgramMode, Role } from "@prisma/client";
 import { ExamQuestion, QuestionDifficulty, examQuestions, pickQuestionForCategory } from "@/lib/server/exam-questions";
+import { CREDITS, FREE_DAILY_PRACTICE_LIMIT } from "@/lib/config/credits";
+import {
+  getLeaderboardCategoryAndDuration,
+  IMPROVEMENT_AWARD_THRESHOLD_PERCENT,
+  MIN_DURATION_FRACTION,
+  MIN_MINUTES_BETWEEN_ENTRIES
+} from "@/lib/config/leaderboard";
 
-const JOINING_BONUS_CREDITS = 120;
+const JOINING_BONUS_CREDITS = 1000;
 const REFERRAL_CREDITS = 50;
 const SESSION_TTL_MS = 1000 * 60 * 60 * 24 * 30;
 
@@ -46,6 +53,7 @@ function toPublicUser(user: {
   district?: string | null;
   state?: string | null;
   school?: string | null;
+  leaderboardOptIn?: boolean;
 }): AppUser {
   return {
     id: user.id,
@@ -60,7 +68,8 @@ function toPublicUser(user: {
     inviteCode: user.inviteCode ?? null,
     district: user.district ?? null,
     state: user.state ?? null,
-    school: user.school ?? null
+    school: user.school ?? null,
+    leaderboardOptIn: user.leaderboardOptIn ?? true
   };
 }
 
@@ -299,7 +308,7 @@ export async function changeCreditsAsync(token: string | null, delta: number) {
   if (!user) return { ok: false as const, message: "Unauthorized." };
 
   const nextCredits = user.credits + delta;
-  if (nextCredits < 0) return { ok: false as const, message: "Not enough credits." };
+  if (nextCredits < 0) return { ok: false as const, message: "Not enough credits. Please top up to continue." };
 
   const updated = await prisma.$transaction(async (tx) => {
     const updatedUser = await tx.user.update({
@@ -310,7 +319,7 @@ export async function changeCreditsAsync(token: string | null, delta: number) {
       data: {
         userId: user.id,
         delta,
-        reason: delta > 0 ? "Wallet top-up" : "Wallet spend",
+        reason: delta > 0 ? "Credits purchased" : "Credits spent",
         balanceAfter: nextCredits
       }
     });
@@ -335,7 +344,7 @@ async function deductCreditsWithReason(userId: string, creditsUsed: number, reas
   const user = await prisma.user.findUnique({ where: { id: userId } });
   if (!user) return { ok: false as const, message: "Unauthorized." };
   const nextCredits = user.credits - creditsUsed;
-  if (nextCredits < 0) return { ok: false as const, message: "Not enough credits." };
+  if (nextCredits < 0) return { ok: false as const, message: "Not enough credits. Please top up to continue." };
 
   const updated = await prisma.$transaction(async (tx) => {
     const updatedUser = await tx.user.update({
@@ -479,7 +488,8 @@ export async function createExamAttempt(token: string | null, examId: string) {
   const exam = exams.find((item) => item.id === examId);
   if (!exam) return { ok: false as const, message: "Exam not found." };
 
-  const charged = await deductCreditsWithReason(user.id, exam.cost, `Exam started: ${exam.name}`);
+  const creditsCost = CREDITS.FULL_MOCK_TEST;
+  const charged = await deductCreditsWithReason(user.id, creditsCost, `Full mock test: ${exam.name}`);
   if (!charged.ok) return charged;
 
   await prisma.examAttempt.create({
@@ -487,7 +497,7 @@ export async function createExamAttempt(token: string | null, examId: string) {
       userId: user.id,
       examId: exam.id,
       examName: exam.name,
-      creditsUsed: exam.cost,
+      creditsUsed: creditsCost,
       status: "started"
     }
   });
@@ -587,16 +597,291 @@ export async function submitExamResult(token: string | null, attemptId: string, 
   if (!attempt || attempt.userId !== user.id) return { ok: false as const, message: "Attempt not found." };
   if (attempt.status === "completed") return { ok: false as const, message: "Attempt already completed." };
 
+  const charged = await deductCreditsWithReason(user.id, CREDITS.AI_ANALYSIS, "AI Analysis");
+  if (!charged.ok) return charged;
+
+  const completedAt = new Date();
   await prisma.examAttempt.update({
     where: { id: attemptId },
     data: {
       status: "completed",
       scorePercent,
-      completedAt: new Date()
+      completedAt
     }
   });
   await updatePracticeStreak(token);
-  return { ok: true as const, message: "Exam result submitted." };
+
+  const lbConfig = getLeaderboardCategoryAndDuration(attempt.examId);
+  const durationMs = completedAt.getTime() - attempt.createdAt.getTime();
+  const minDurationMs = lbConfig
+    ? MIN_DURATION_FRACTION * lbConfig.durationMinutes * 60 * 1000
+    : 0;
+  const validDuration = durationMs >= minDurationMs;
+  const examCategory = lbConfig?.category ?? "JEE";
+
+  let districtRank: number | null = null;
+  let stateRank: number | null = null;
+  let globalRank: number | null = null;
+  let improvementFromLastAttempt: number | null = null;
+  let improvementAwardCreated = false;
+
+  if (validDuration && user.leaderboardOptIn !== false) {
+    const cutoff = new Date(completedAt.getTime() - MIN_MINUTES_BETWEEN_ENTRIES * 60 * 1000);
+    const recent = await prisma.leaderboardEntry.findFirst({
+      where: {
+        userId: user.id,
+        examCategory,
+        createdAt: { gte: cutoff }
+      }
+    });
+    if (!recent) {
+      await prisma.leaderboardEntry.create({
+        data: {
+          userId: user.id,
+          examCategory,
+          scorePercent,
+          attemptId,
+          district: user.district ?? undefined,
+          state: user.state ?? undefined
+        }
+      });
+
+      const prevBest = await prisma.leaderboardEntry.findFirst({
+        where: { userId: user.id, examCategory },
+        orderBy: { scorePercent: "desc" },
+        skip: 1
+      });
+      if (prevBest && scorePercent - prevBest.scorePercent >= IMPROVEMENT_AWARD_THRESHOLD_PERCENT) {
+        await prisma.improvementAward.create({
+          data: {
+            userId: user.id,
+            examCategory,
+            oldScore: prevBest.scorePercent,
+            newScore: scorePercent,
+            improvementPercent: scorePercent - prevBest.scorePercent
+          }
+        });
+        improvementAwardCreated = true;
+      }
+
+      const prevEntry = await prisma.leaderboardEntry.findMany({
+        where: { userId: user.id, examCategory },
+        orderBy: { createdAt: "desc" },
+        skip: 1,
+        take: 1
+      });
+      if (prevEntry[0]) improvementFromLastAttempt = scorePercent - prevEntry[0].scorePercent;
+
+      const ranks = await computeRanksForUser(user.id, examCategory, user.district ?? null, user.state ?? null);
+      districtRank = ranks.districtRank;
+      stateRank = ranks.stateRank;
+      globalRank = ranks.globalRank;
+    }
+  }
+
+  return {
+    ok: true as const,
+    message: "Exam result submitted.",
+    scorePercent,
+    districtRank: districtRank ?? undefined,
+    stateRank: stateRank ?? undefined,
+    globalRank: globalRank ?? undefined,
+    improvementFromLastAttempt: improvementFromLastAttempt ?? undefined,
+    improvementAwardCreated
+  };
+}
+
+async function computeRanksForUser(
+  userId: string,
+  examCategory: string,
+  district: string | null,
+  state: string | null
+): Promise<{ districtRank: number; stateRank: number; globalRank: number }> {
+  const optInUserIds = await prisma.user.findMany({
+    where: { leaderboardOptIn: true },
+    select: { id: true }
+  }).then((list) => new Set(list.map((u) => u.id)));
+
+  const allEntries = await prisma.leaderboardEntry.findMany({
+    where: { examCategory, userId: { in: Array.from(optInUserIds) } },
+    orderBy: { scorePercent: "desc" },
+    include: { user: { select: { id: true } } }
+  });
+
+  const bestByUser = new Map<string, number>();
+  for (const e of allEntries) {
+    const cur = bestByUser.get(e.userId);
+    if (cur === undefined || e.scorePercent > cur) bestByUser.set(e.userId, e.scorePercent);
+  }
+  const globalSorted = [...bestByUser.entries()].sort((a, b) => b[1] - a[1]);
+  const globalRank = (globalSorted.findIndex(([id]) => id === userId) + 1) || globalSorted.length + 1;
+
+  const districtEntries = district
+    ? allEntries.filter((e) => e.district === district)
+    : allEntries;
+  const districtByUser = new Map<string, number>();
+  for (const e of districtEntries) {
+    const cur = districtByUser.get(e.userId);
+    if (cur === undefined || e.scorePercent > cur) districtByUser.set(e.userId, e.scorePercent);
+  }
+  const districtSorted = [...districtByUser.entries()].sort((a, b) => b[1] - a[1]);
+  const districtRank = (districtSorted.findIndex(([id]) => id === userId) + 1) || districtSorted.length + 1;
+
+  const stateEntries = state ? allEntries.filter((e) => e.state === state) : allEntries;
+  const stateByUser = new Map<string, number>();
+  for (const e of stateEntries) {
+    const cur = stateByUser.get(e.userId);
+    if (cur === undefined || e.scorePercent > cur) stateByUser.set(e.userId, e.scorePercent);
+  }
+  const stateSorted = [...stateByUser.entries()].sort((a, b) => b[1] - a[1]);
+  const stateRank = (stateSorted.findIndex(([id]) => id === userId) + 1) || stateSorted.length + 1;
+
+  return { districtRank, stateRank, globalRank };
+}
+
+export async function getLeaderboardEntries(
+  type: "district" | "state" | "global",
+  value: string | null,
+  examCategory: string,
+  limit = 10
+) {
+  const optInIds = await prisma.user.findMany({
+    where: { leaderboardOptIn: true },
+    select: { id: true }
+  }).then((list) => new Set(list.map((u) => u.id)));
+
+  const baseWhere: { examCategory: string; userId: { in: string[] }; district?: string; state?: string } = {
+    examCategory,
+    userId: { in: Array.from(optInIds) }
+  };
+  if (type === "district" && value) baseWhere.district = value;
+  if (type === "state" && value) baseWhere.state = value;
+
+  const entries = await prisma.leaderboardEntry.findMany({
+    where: baseWhere,
+    orderBy: { scorePercent: "desc" },
+    take: limit * 3,
+    include: { user: { select: { id: true, name: true } } }
+  });
+
+  const bestByUser = new Map<string, { scorePercent: number; name: string }>();
+  for (const e of entries) {
+    const cur = bestByUser.get(e.userId);
+    if (!cur || e.scorePercent > cur.scorePercent) {
+      bestByUser.set(e.userId, { scorePercent: e.scorePercent, name: e.user.name });
+    }
+  }
+  const sorted = [...bestByUser.entries()]
+    .sort((a, b) => b[1].scorePercent - a[1].scorePercent)
+    .slice(0, limit)
+    .map(([userId, v], i) => ({ rank: i + 1, userId, name: v.name, scorePercent: v.scorePercent }));
+
+  return { ok: true as const, entries: sorted };
+}
+
+export async function getMyRanks(token: string | null, examCategory: string) {
+  const user = await getAuthorizedUser(token);
+  if (!user) return { ok: false as const, message: "Unauthorized." };
+  const ranks = await computeRanksForUser(
+    user.id,
+    examCategory,
+    user.district ?? null,
+    user.state ?? null
+  );
+  return {
+    ok: true as const,
+    districtRank: ranks.districtRank,
+    stateRank: ranks.stateRank,
+    globalRank: ranks.globalRank
+  };
+}
+
+export async function getWeeklyToppers(examCategory?: string) {
+  const now = new Date();
+  const day = now.getDay();
+  const weekStart = new Date(now);
+  weekStart.setDate(now.getDate() - (day === 0 ? 6 : day - 1));
+  weekStart.setHours(0, 0, 0, 0);
+  const weekEnd = new Date(weekStart);
+  weekEnd.setDate(weekStart.getDate() + 7);
+
+  const optInIds = await prisma.user.findMany({
+    where: { leaderboardOptIn: true },
+    select: { id: true }
+  }).then((list) => new Set(list.map((u) => u.id)));
+
+  const where: { createdAt: { gte: Date; lt: Date }; userId: { in: string[] }; examCategory?: string } = {
+    createdAt: { gte: weekStart, lt: weekEnd },
+    userId: { in: Array.from(optInIds) }
+  };
+  if (examCategory) where.examCategory = examCategory;
+
+  const entries = await prisma.leaderboardEntry.findMany({
+    where,
+    orderBy: { scorePercent: "desc" },
+    include: { user: { select: { id: true, name: true } } }
+  });
+
+  const bestByCategory = new Map<string, { userId: string; name: string; scorePercent: number }>();
+  for (const e of entries) {
+    const cur = bestByCategory.get(e.examCategory);
+    if (!cur || e.scorePercent > cur.scorePercent) {
+      bestByCategory.set(e.examCategory, {
+        userId: e.userId,
+        name: e.user.name,
+        scorePercent: e.scorePercent
+      });
+    }
+  }
+  const toppers = [...bestByCategory.entries()].map(([cat, v]) => ({
+    examCategory: cat,
+    userId: v.userId,
+    name: v.name,
+    scorePercent: v.scorePercent,
+    weekStart: weekStart.toISOString(),
+    weekEnd: weekEnd.toISOString()
+  }));
+  return { ok: true as const, toppers };
+}
+
+export async function getImprovementAwards(token: string | null, limit = 5) {
+  const user = await getAuthorizedUser(token);
+  if (!user) return { ok: false as const, message: "Unauthorized." };
+  const awards = await prisma.improvementAward.findMany({
+    where: { userId: user.id },
+    orderBy: { createdAt: "desc" },
+    take: limit
+  });
+  return {
+    ok: true as const,
+    awards: awards.map((a) => ({
+      examCategory: a.examCategory,
+      oldScore: a.oldScore,
+      newScore: a.newScore,
+      improvementPercent: a.improvementPercent,
+      createdAt: a.createdAt.toISOString()
+    }))
+  };
+}
+
+export async function updateLeaderboardOptIn(token: string | null, optIn: boolean) {
+  const user = await getAuthorizedUser(token);
+  if (!user) return { ok: false as const, message: "Unauthorized." };
+  await prisma.user.update({
+    where: { id: user.id },
+    data: { leaderboardOptIn: optIn }
+  });
+  return { ok: true as const, leaderboardOptIn: optIn };
+}
+
+export async function getLeaderboardOptIn(token: string | null) {
+  const user = await getAuthorizedUser(token);
+  if (!user) return { ok: false as const, message: "Unauthorized." };
+  const u = await prisma.user.findUnique({
+    where: { id: user.id },
+    select: { leaderboardOptIn: true }
+  });
+  return { ok: true as const, leaderboardOptIn: u?.leaderboardOptIn ?? true };
 }
 
 export async function getTrainingPlan(token: string | null, examCategory: string) {
@@ -633,6 +918,9 @@ export async function saveTrainingPlan(
 ) {
   const user = await getAuthorizedUser(token);
   if (!user) return { ok: false as const, message: "Unauthorized." };
+
+  const charged = await deductCreditsWithReason(user.id, CREDITS.TRAINING_PLAN, "Training plan saved");
+  if (!charged.ok) return charged;
 
   const jsonPlan: Prisma.InputJsonValue = planData as Prisma.InputJsonValue;
   const plan = await prisma.trainingPlan.upsert({
@@ -775,6 +1063,26 @@ export async function nextPracticeQuestion(
       topic: lastAnswer.question.topic,
       correct: lastAnswer.correct,
       timeSeconds: lastAnswer.timeSeconds
+    });
+  }
+
+  // Credit check: 1 credit per question, or 5 free per day when credits are 0
+  const today = new Date().toISOString().slice(0, 10);
+  if (user.credits >= CREDITS.PRACTICE_QUESTION) {
+    const charged = await deductCreditsWithReason(user.id, CREDITS.PRACTICE_QUESTION, "Practice question");
+    if (!charged.ok) return charged;
+  } else {
+    const freeRecord = await prisma.freePracticeDaily.findUnique({
+      where: { userId_date: { userId: user.id, date: today } }
+    });
+    const used = freeRecord?.count ?? 0;
+    if (used >= FREE_DAILY_PRACTICE_LIMIT) {
+      return { ok: false as const, message: "Not enough credits. Please top up to continue." };
+    }
+    await prisma.freePracticeDaily.upsert({
+      where: { userId_date: { userId: user.id, date: today } },
+      create: { userId: user.id, date: today, count: used + 1 },
+      update: { count: used + 1 }
     });
   }
 
@@ -937,6 +1245,7 @@ export async function getShareCardData(token: string | null, examCategory?: stri
   const user = await getAuthorizedUser(token);
   if (!user) return { ok: false as const, message: "Unauthorized." };
 
+  const category = examCategory || "NEET";
   const attempts = await prisma.examAttempt.findMany({
     where: { userId: user.id, scorePercent: { not: null } },
     orderBy: { createdAt: "asc" }
@@ -952,16 +1261,20 @@ export async function getShareCardData(token: string | null, examCategory?: stri
             topicPerf.reduce((s, r) => s + r.accuracy * r.attempts, 0) / topicPerf.reduce((s, r) => s + r.attempts, 0) || 1
           )
         : 0;
-  const rank = await getRankForUser(user.id, examCategory);
+  const rank = await getRankForUser(user.id, category);
+  const ranks = await computeRanksForUser(user.id, category, user.district ?? null, user.state ?? null);
 
   return {
     ok: true as const,
     name: user.name,
-    examCategory: examCategory || "NEET",
+    examCategory: category,
     initialAccuracy,
     currentAccuracy: recentAccuracy,
     improvement: recentAccuracy - initialAccuracy,
-    rank
+    rank,
+    districtRank: ranks.districtRank,
+    stateRank: ranks.stateRank,
+    globalRank: ranks.globalRank
   };
 }
 

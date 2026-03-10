@@ -126,7 +126,7 @@ export default function SkillDevelopmentPage() {
         <h2 className="text-sm font-semibold text-slate-900">Admin Hosted Courses</h2>
         <ul className="mt-3 space-y-2 text-xs text-slate-600">
           <li className="rounded-xl bg-slate-50 px-3 py-2">Courses are published from the admin panel.</li>
-          <li className="rounded-xl bg-slate-50 px-3 py-2">Students can enroll only using wallet credits.</li>
+          <li className="rounded-xl bg-slate-50 px-3 py-2">Students can enroll only using credits.</li>
           <li className="rounded-xl bg-slate-50 px-3 py-2">Live sessions include attendance and completion tracking.</li>
         </ul>
       </section>

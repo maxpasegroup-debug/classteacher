@@ -1,9 +1,10 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { Hourglass, Target, AlertCircle } from "lucide-react";
+import { Hourglass, Target, AlertCircle, Share2, Trophy } from "lucide-react";
 import { useAppSession } from "@/components/providers/AppSessionProvider";
 
 const categoryExamMap: Record<string, string> = {
@@ -16,6 +17,16 @@ const categoryExamMap: Record<string, string> = {
   aptitude: "ex-all-india-apt"
 };
 
+const categoryToLb: Record<string, string> = {
+  medical: "NEET",
+  engineering: "JEE",
+  kerala: "KEAM",
+  keam: "KEAM",
+  national: "JEE",
+  international: "CUET",
+  aptitude: "JEE"
+};
+
 export default function DiagnosticPage() {
   const { user, getAuthHeaders, refreshUser } = useAppSession();
   const router = useRouter();
@@ -23,6 +34,14 @@ export default function DiagnosticPage() {
   const [attemptId, setAttemptId] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  const [result, setResult] = useState<{
+    scorePercent: number;
+    districtRank?: number;
+    stateRank?: number;
+    globalRank?: number;
+    improvementFromLastAttempt?: number;
+    improvementAwardCreated?: boolean;
+  } | null>(null);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -78,14 +97,30 @@ export default function DiagnosticPage() {
         headers: getAuthHeaders(true),
         body: JSON.stringify({ attemptId: latest.id, scorePercent: score })
       });
-      const result = (await response.json()) as { ok: boolean; message?: string };
-      if (!response.ok || !result.ok) {
-        setMessage(result.message || "Unable to submit diagnostic.");
+      const submitResult = (await response.json()) as {
+        ok: boolean;
+        message?: string;
+        scorePercent?: number;
+        districtRank?: number;
+        stateRank?: number;
+        globalRank?: number;
+        improvementFromLastAttempt?: number;
+        improvementAwardCreated?: boolean;
+      };
+      if (!response.ok || !submitResult.ok) {
+        setMessage(submitResult.message || "Unable to submit diagnostic.");
         setTimeout(() => setMessage(null), 4000);
         return;
       }
-      setMessage(`Diagnostic submitted. Score: ${score}%. Redirecting to your training plan...`);
-      router.push(`/dashboard/exam-coaching/training-plan?category=${encodeURIComponent(category)}`);
+      setResult({
+        scorePercent: submitResult.scorePercent ?? score,
+        districtRank: submitResult.districtRank,
+        stateRank: submitResult.stateRank,
+        globalRank: submitResult.globalRank,
+        improvementFromLastAttempt: submitResult.improvementFromLastAttempt,
+        improvementAwardCreated: submitResult.improvementAwardCreated
+      });
+      setMessage("Diagnostic submitted. See your ranks below.");
     } finally {
       setSubmitting(false);
     }
@@ -103,6 +138,62 @@ export default function DiagnosticPage() {
         >
           {message}
         </div>
+      )}
+
+      {result && (
+        <motion.section
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="rounded-2xl border border-emerald-200 bg-gradient-to-br from-emerald-50 to-teal-50 p-4 shadow-sm"
+        >
+          <div className="flex items-center gap-2">
+            <Trophy className="h-5 w-5 text-amber-500" />
+            <h2 className="text-sm font-semibold text-slate-900">Your result</h2>
+          </div>
+          <p className="mt-2 text-2xl font-bold text-slate-900">Score: {result.scorePercent}%</p>
+          <div className="mt-3 grid grid-cols-3 gap-2 text-center text-sm">
+            {result.districtRank != null && (
+              <>
+                <div>
+                  <p className="font-bold text-slate-900">{result.districtRank}</p>
+                  <p className="text-xs text-slate-500">District</p>
+                </div>
+                <div>
+                  <p className="font-bold text-slate-900">{result.stateRank ?? "—"}</p>
+                  <p className="text-xs text-slate-500">State</p>
+                </div>
+                <div>
+                  <p className="font-bold text-slate-900">{result.globalRank ?? "—"}</p>
+                  <p className="text-xs text-slate-500">Global</p>
+                </div>
+              </>
+            )}
+          </div>
+          {result.improvementFromLastAttempt != null && result.improvementFromLastAttempt !== 0 && (
+            <p className="mt-2 text-sm text-emerald-700">
+              {result.improvementFromLastAttempt > 0 ? "↑" : "↓"} {Math.abs(result.improvementFromLastAttempt)}% vs last attempt
+            </p>
+          )}
+          {result.improvementAwardCreated && (
+            <p className="mt-1 text-xs font-semibold text-amber-700">🏆 Most Improved Student badge earned!</p>
+          )}
+          <div className="mt-4 flex flex-wrap gap-2">
+            <Link
+              href={`/share/leaderboard?examCategory=${encodeURIComponent(categoryToLb[category] ?? "JEE")}`}
+              className="inline-flex items-center gap-1 rounded-full bg-emerald-600 px-4 py-2 text-xs font-semibold text-white"
+            >
+              <Share2 size={14} />
+              Share result
+            </Link>
+            <button
+              type="button"
+              onClick={() => router.push(`/dashboard/exam-coaching/training-plan?category=${encodeURIComponent(category)}`)}
+              className="rounded-full border border-slate-300 px-4 py-2 text-xs font-semibold text-slate-700"
+            >
+              Continue to plan
+            </button>
+          </div>
+        </motion.section>
       )}
       <motion.section
         initial={{ opacity: 0, y: 8 }}

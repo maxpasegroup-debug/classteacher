@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { GraduationCap, Activity, Target, Clock3 } from "lucide-react";
+import CreditBadge, { LowCreditBanner } from "@/components/CreditBadge";
 import { useAppSession } from "@/components/providers/AppSessionProvider";
 
 const examCategories = [
@@ -70,7 +71,16 @@ export default function ExamCoachingHomePage() {
           Start with a diagnostic test, get a SWOT profile and follow a weekly AI-guided training plan.
         </p>
         <p className="mt-2 text-xs font-medium text-emerald-50/90">Ideal for Class 11, Class 12 and repeaters.</p>
+        {user && (
+          <div className="mt-3">
+            <CreditBadge credits={user.credits} className="border-white/30 bg-white/10 [&_span]:text-white" />
+          </div>
+        )}
       </motion.section>
+
+      {user && user.credits < 100 && (
+        <LowCreditBanner credits={user.credits} />
+      )}
 
       <section className="grid grid-cols-2 gap-3 md:grid-cols-3">
         {examCategories.map((category, index) => (

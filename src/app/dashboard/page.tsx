@@ -18,7 +18,9 @@ import {
   Volume2
 } from "lucide-react";
 import ComingSoonCard from "@/components/ComingSoonCard";
+import CreditBadge, { LowCreditBanner } from "@/components/CreditBadge";
 import { useAppSession } from "@/components/providers/AppSessionProvider";
+import DashboardLeaderboardWidget from "@/components/DashboardLeaderboardWidget";
 
 const modules = [
   {
@@ -128,8 +130,17 @@ export default function DashboardPage() {
             {user?.className || "Class 10 | CBSE"} | Goal: {user?.goal || "Master algebra this week"}
           </p>
           <p className="mt-1 text-xs font-medium text-teal-700">
-            {isReady && user ? `Wallet: ${user.credits} credits` : "Guest mode - sign up to unlock all features"}
+            {isReady && user ? (
+              <CreditBadge credits={user.credits} showLabel={false} className="border-teal-200 bg-teal-50/50" />
+            ) : (
+              "Guest mode - sign up to unlock all features"
+            )}
           </p>
+          {user && user.credits < 100 && (
+            <div className="mt-2">
+              <LowCreditBanner credits={user.credits} />
+            </div>
+          )}
         </div>
       </motion.section>
 
@@ -276,6 +287,19 @@ export default function DashboardPage() {
           {user ? "Start Test" : "Create account to start"}
         </button>
       </motion.section>
+
+      {user && (
+        <DashboardLeaderboardWidget
+          // getAuthHeaders is available via AppSession but not destructured at top; re-use session hook locally if needed
+          // we keep widget simple: it will fetch with auth cookie when headers are omitted
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          getAuthHeaders={(withCsrf?: boolean) => {
+            // lightweight fallback: just return empty headers; AppSession-based calls can be wired later if needed
+            return {};
+          }}
+          onViewLeaderboard={() => handleProtectedAction("/leaderboard")}
+        />
+      )}
 
       <section className="space-y-2">
         <div className="flex items-center justify-between">

@@ -35,7 +35,7 @@ export default function LoginPage() {
       <section className="mx-auto w-full max-w-md rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
         <p className="text-xs font-medium uppercase tracking-wide text-cyan-700">Roots Education Hub</p>
         <h1 className="mt-1 text-xl font-semibold text-slate-900">Login to continue</h1>
-        <p className="mt-1 text-sm text-slate-600">Access tests, bookings, and your credit wallet.</p>
+        <p className="mt-1 text-sm text-slate-600">Access tests, bookings, and your credits.</p>
 
         <form onSubmit={onSubmit} className="mt-4 space-y-3">
           <input

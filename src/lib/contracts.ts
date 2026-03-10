@@ -12,6 +12,7 @@ export type AppUser = {
   district?: string | null;
   state?: string | null;
   school?: string | null;
+  leaderboardOptIn?: boolean;
 };
 
 export type AuthSuccessResponse = {
