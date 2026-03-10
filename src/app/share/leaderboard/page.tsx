@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { toPng } from "html-to-image";
@@ -11,7 +11,7 @@ const APP_NAME = "Classteacher AI Exam Coaching";
 const SHARE_TEXT = (name: string, score: number, exam: string, districtRank: number | null) =>
   `I scored ${score}% in ${exam} mock test on ${APP_NAME}.${districtRank ? ` District Rank: ${districtRank}.` : ""} Join and improve your rank.`;
 
-export default function ShareLeaderboardPage() {
+function ShareLeaderboardContent() {
   const searchParams = useSearchParams();
   const { user, getAuthHeaders } = useAppSession();
   const cardRef = useRef<HTMLDivElement>(null);
@@ -171,5 +171,19 @@ export default function ShareLeaderboardPage() {
         </div>
       </div>
     </main>
+  );
+}
+
+export default function ShareLeaderboardPage() {
+  return (
+    <Suspense
+      fallback={
+        <main className="flex min-h-screen items-center justify-center bg-slate-100 px-4">
+          <p className="text-slate-600">Loading…</p>
+        </main>
+      }
+    >
+      <ShareLeaderboardContent />
+    </Suspense>
   );
 }

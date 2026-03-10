@@ -185,7 +185,7 @@ export default function LeaderboardPage() {
               </li>
             ))}
           </ul>
-        </section>
+        )}
       </section>
 
       {/* Share Achievement */}

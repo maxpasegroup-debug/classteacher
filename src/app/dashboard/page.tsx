@@ -288,18 +288,7 @@ export default function DashboardPage() {
         </button>
       </motion.section>
 
-      {user && (
-        <DashboardLeaderboardWidget
-          // getAuthHeaders is available via AppSession but not destructured at top; re-use session hook locally if needed
-          // we keep widget simple: it will fetch with auth cookie when headers are omitted
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          getAuthHeaders={(withCsrf?: boolean) => {
-            // lightweight fallback: just return empty headers; AppSession-based calls can be wired later if needed
-            return {};
-          }}
-          onViewLeaderboard={() => handleProtectedAction("/leaderboard")}
-        />
-      )}
+      {user && <DashboardLeaderboardWidget onViewLeaderboard={() => handleProtectedAction("/leaderboard")} />}
 
       <section className="space-y-2">
         <div className="flex items-center justify-between">
