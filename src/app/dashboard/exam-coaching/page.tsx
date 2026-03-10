@@ -25,6 +25,12 @@ const examCategories = [
     accent: "from-emerald-500 to-lime-500"
   },
   {
+    id: "keam",
+    label: "KEAM",
+    description: "Kerala Engineering, Architecture & Medical",
+    accent: "from-lime-500 to-green-500"
+  },
+  {
     id: "national",
     label: "National Entrance Exams",
     description: "CUET, NDA, CLAT and more",

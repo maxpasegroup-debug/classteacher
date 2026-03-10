@@ -29,6 +29,7 @@ export default function TrainingPlanPage() {
     rank: number;
   } | null>(null);
   const [inviteLink, setInviteLink] = useState<string | null>(null);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [analytics, setAnalytics] = useState<{
     accuracy: number;
     averageTime: number;
@@ -174,11 +175,13 @@ export default function TrainingPlanPage() {
     });
     const data = (await response.json()) as { ok: boolean; plan?: TrainingPlanItem; message?: string };
     if (!response.ok || !data.ok) {
-      alert(data.message || "Unable to save training plan.");
+      setToastMessage(data.message || "Unable to save training plan.");
+      setTimeout(() => setToastMessage(null), 4000);
       return;
     }
     if (data.plan) setPlan(data.plan);
-    alert("Training plan saved to your profile.");
+    setToastMessage("Training plan saved to your profile.");
+    setTimeout(() => setToastMessage(null), 3000);
   }
 
   const effectivePlan = plan?.planData || generatedWeeklyPlan;
@@ -197,7 +200,8 @@ export default function TrainingPlanPage() {
       message?: string;
     };
     if (!response.ok || !data.ok || !data.question) {
-      alert(data.message || "Unable to load practice question.");
+      setToastMessage(data.message || "Unable to load practice question.");
+      setTimeout(() => setToastMessage(null), 4000);
       return;
     }
     setCurrentQuestion(data.question);
@@ -227,7 +231,8 @@ export default function TrainingPlanPage() {
       nextQuestion?: { id: string; subject: string; topic: string; questionText: string; options: string[] };
     };
     if (!response.ok || !data.ok) {
-      alert(data.explanation || "Unable to evaluate answer.");
+      setToastMessage(data.explanation || "Unable to evaluate answer.");
+      setTimeout(() => setToastMessage(null), 4000);
       return;
     }
     setFeedback({
@@ -245,6 +250,17 @@ export default function TrainingPlanPage() {
 
   return (
     <main className="space-y-4 px-4 py-5 md:px-0">
+      {toastMessage && (
+        <div
+          className={`rounded-xl border px-4 py-2 text-sm font-medium ${
+            toastMessage.includes("Unable") || toastMessage.includes("Failed")
+              ? "border-rose-200 bg-rose-50 text-rose-800"
+              : "border-emerald-200 bg-emerald-50 text-emerald-800"
+          }`}
+        >
+          {toastMessage}
+        </div>
+      )}
       <motion.section
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
@@ -297,7 +313,10 @@ export default function TrainingPlanPage() {
               if (typeof navigator !== "undefined" && navigator.share) {
                 navigator.share({ title: "Classteacher progress", text, url: shareUrl }).catch(() => navigator.clipboard?.writeText(shareUrl));
               } else {
-                navigator.clipboard?.writeText(shareUrl).then(() => alert("Link copied. Share on WhatsApp or elsewhere!"));
+                navigator.clipboard?.writeText(shareUrl).then(() => {
+                  setToastMessage("Link copied. Share on WhatsApp or elsewhere!");
+                  setTimeout(() => setToastMessage(null), 3000);
+                });
               }
             }}
             className="mt-2 inline-flex items-center gap-1 rounded-full bg-slate-900 px-3 py-1.5 text-xs font-semibold text-white"
@@ -394,7 +413,10 @@ export default function TrainingPlanPage() {
               if (typeof navigator !== "undefined" && navigator.share) {
                 navigator.share({ title: "Weekly Training Report", text }).catch(() => navigator.clipboard?.writeText(text));
               } else {
-                navigator.clipboard?.writeText(text).then(() => alert("Report text copied. Share with friends!"));
+                navigator.clipboard?.writeText(text).then(() => {
+                  setToastMessage("Report text copied. Share with friends!");
+                  setTimeout(() => setToastMessage(null), 3000);
+                });
               }
             }}
             className="mt-2 inline-flex items-center gap-1 rounded-full bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white"
@@ -419,7 +441,8 @@ export default function TrainingPlanPage() {
               type="button"
               onClick={() => {
                 navigator.clipboard?.writeText(inviteLink);
-                alert("Invite link copied!");
+                setToastMessage("Invite link copied!");
+                setTimeout(() => setToastMessage(null), 3000);
               }}
               className="inline-flex items-center gap-1 rounded-full bg-slate-900 px-3 py-1.5 text-xs font-semibold text-white"
             >

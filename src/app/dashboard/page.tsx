@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useState } from "react";
 import { motion } from "framer-motion";
 import {
   Bell,
@@ -16,6 +17,7 @@ import {
   UserPlus,
   Volume2
 } from "lucide-react";
+import ComingSoonCard from "@/components/ComingSoonCard";
 import { useAppSession } from "@/components/providers/AppSessionProvider";
 
 const modules = [
@@ -69,6 +71,8 @@ const skillSpotlight = [
 export default function DashboardPage() {
   const { user, isReady } = useAppSession();
   const router = useRouter();
+  const [showNotificationsComingSoon, setShowNotificationsComingSoon] = useState(false);
+  const [showSearchComingSoon, setShowSearchComingSoon] = useState(false);
 
   function authHref(path: string) {
     return `/auth/signup?returnTo=${encodeURIComponent(path)}`;
@@ -104,16 +108,17 @@ export default function DashboardPage() {
             <button
               type="button"
               aria-label="Notifications"
-              className="relative rounded-full border border-slate-200 bg-white p-2 text-slate-600"
+              onClick={() => setShowNotificationsComingSoon(true)}
+              className="relative rounded-full border border-slate-200 bg-white p-2 text-slate-600 hover:bg-slate-50"
             >
               <Bell size={16} />
               <span className="absolute -right-1 -top-1 h-2.5 w-2.5 rounded-full bg-emerald-500" />
             </button>
-            <button type="button" aria-label="Student profile" className="rounded-full border border-slate-200 bg-white p-1">
+            <Link href="/profile" aria-label="Student profile" className="rounded-full border border-slate-200 bg-white p-1">
               <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-sky-500 to-cyan-400 text-sm font-bold text-white">
                 {user?.name?.[0]?.toUpperCase() || "R"}
               </div>
-            </button>
+            </Link>
           </div>
         </div>
 
@@ -127,6 +132,12 @@ export default function DashboardPage() {
           </p>
         </div>
       </motion.section>
+
+      {showNotificationsComingSoon && (
+        <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+          <ComingSoonCard />
+        </section>
+      )}
 
       {/* AI Exam Coaching highlight banner (desktop + mobile) */}
       <section className="rounded-3xl border border-emerald-100 bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500 p-4 text-white shadow-md">
@@ -188,45 +199,58 @@ export default function DashboardPage() {
         transition={{ duration: 0.25, delay: 0.03, ease: "easeOut" }}
         className="rounded-2xl border border-slate-200 bg-white p-3 shadow-sm"
       >
-        <label htmlFor="search" className="sr-only">
-          Search questions, topics, exams
-        </label>
-        <div className="flex items-center gap-2 rounded-xl bg-slate-100 px-3 py-2.5">
-          <Search size={18} className="text-slate-500" />
-          <input
-            id="search"
-            type="search"
-            placeholder="Search questions, topics, exams"
-            className="w-full bg-transparent text-sm text-slate-700 outline-none placeholder:text-slate-400"
-          />
-        </div>
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            setShowSearchComingSoon(true);
+          }}
+        >
+          <label htmlFor="search" className="sr-only">
+            Search questions, topics, exams
+          </label>
+          <div className="flex items-center gap-2 rounded-xl bg-slate-100 px-3 py-2.5">
+            <Search size={18} className="text-slate-500" />
+            <input
+              id="search"
+              type="search"
+              placeholder="Search questions, topics, exams"
+              className="w-full bg-transparent text-sm text-slate-700 outline-none placeholder:text-slate-400"
+            />
+          </div>
+        </form>
+        {showSearchComingSoon && (
+          <div className="mt-3">
+            <ComingSoonCard />
+          </div>
+        )}
       </motion.section>
 
       <section className="grid grid-cols-2 gap-3 md:grid-cols-4">
         {modules.map((module, index) => {
           const Icon = module.icon;
           return (
-            <motion.article
-              key={module.title}
-              initial={{ opacity: 0, y: 14 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.3, delay: index * 0.06, ease: "easeOut" }}
-              whileTap={{ scale: 0.98 }}
-              className={`rounded-2xl bg-gradient-to-br p-3 text-white shadow-md ${module.gradient}`}
-            >
-              <div className="flex items-start justify-between gap-2">
-                <div>
-                  <h2 className="text-sm font-semibold">{module.title}</h2>
-                  <p className="mt-1 text-xs text-white/90">{module.description}</p>
+            <Link key={module.title} href={module.href}>
+              <motion.article
+                initial={{ opacity: 0, y: 14 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3, delay: index * 0.06, ease: "easeOut" }}
+                whileTap={{ scale: 0.98 }}
+                className={`block rounded-2xl bg-gradient-to-br p-3 text-white shadow-md ${module.gradient}`}
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <div>
+                    <h2 className="text-sm font-semibold">{module.title}</h2>
+                    <p className="mt-1 text-xs text-white/90">{module.description}</p>
+                  </div>
+                  <span className="rounded-lg bg-white/20 p-1.5">
+                    <Icon size={16} />
+                  </span>
                 </div>
-                <span className="rounded-lg bg-white/20 p-1.5">
-                  <Icon size={16} />
+                <span className="mt-3 inline-block text-xs font-semibold text-white/95 underline-offset-2">
+                  Explore →
                 </span>
-              </div>
-              <Link href={module.href} className="mt-3 inline-block text-xs font-semibold text-white/95 underline-offset-2 hover:underline">
-                Explore
-              </Link>
-            </motion.article>
+              </motion.article>
+            </Link>
           );
         })}
       </section>
@@ -289,9 +313,9 @@ export default function DashboardPage() {
       <section className="space-y-2 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm lg:col-span-2 lg:row-span-2 lg:self-start lg:[grid-area:leaderboard]">
         <div className="flex items-center justify-between">
           <h3 className="text-base font-semibold text-slate-900">Leaderboard</h3>
-          <button type="button" className="text-xs font-medium text-teal-700">
+          <Link href="/dashboard/exam-coaching/training-plan" className="text-xs font-medium text-teal-700 hover:underline">
             View all
-          </button>
+          </Link>
         </div>
         <ul className="mt-2 space-y-2 md:max-h-64 md:overflow-auto">
           {leaderboard.map((item) => (

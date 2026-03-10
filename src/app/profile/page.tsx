@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import Header from "@/components/Header";
+import ComingSoonCard from "@/components/ComingSoonCard";
 import { useAppSession } from "@/components/providers/AppSessionProvider";
 import { ActivityItem, CourseEnrollmentItem, CreditTransactionItem, ExamAttemptItem } from "@/lib/contracts";
 
@@ -16,6 +17,8 @@ export default function ProfilePage() {
   const [state, setState] = useState("");
   const [school, setSchool] = useState("");
   const [profileSaving, setProfileSaving] = useState(false);
+  const [settingsComingSoon, setSettingsComingSoon] = useState(false);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   useEffect(() => {
     async function loadHistory() {
@@ -52,7 +55,7 @@ export default function ProfilePage() {
       setState(user.state ?? "");
       setSchool(user.school ?? "");
     }
-  }, [user?.district, user?.state, user?.school]);
+  }, [user]);
 
   if (!user) {
     return (
@@ -144,8 +147,9 @@ export default function ProfilePage() {
                 const data = (await res.json()) as { ok: boolean; message?: string };
                 if (data.ok) {
                   await refreshUser();
-                  alert("Location saved.");
-                } else alert(data.message || "Failed to save.");
+                  setSuccessMessage("Location saved.");
+                  setTimeout(() => setSuccessMessage(null), 3000);
+                } else setSuccessMessage(data.message || "Failed to save.");
               } finally {
                 setProfileSaving(false);
               }
@@ -154,6 +158,9 @@ export default function ProfilePage() {
           >
             {profileSaving ? "Saving…" : "Save location"}
           </button>
+          {successMessage && successMessage.includes("Location") && (
+            <p className="mt-2 text-xs font-medium text-emerald-600">{successMessage}</p>
+          )}
         </section>
 
         <section className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
@@ -201,15 +208,22 @@ export default function ProfilePage() {
             onClick={async () => {
               const result = await addCredits(100);
               if (!result.ok) {
-                alert(result.message);
+                setSuccessMessage(result.message || "Top-up failed.");
+                setTimeout(() => setSuccessMessage(null), 4000);
                 return;
               }
-              alert("Top-up successful. 100 credits added.");
+              setSuccessMessage("Top-up successful. 100 credits added.");
+              setTimeout(() => setSuccessMessage(null), 4000);
             }}
             className="mt-3 rounded-full bg-teal-700 px-3 py-1.5 text-xs font-semibold text-white"
           >
             Add 100 credits
           </button>
+          {successMessage && (successMessage.includes("Top-up") || successMessage.includes("Failed")) && (
+            <p className={`mt-2 text-xs font-medium ${successMessage.startsWith("Top-up") ? "text-emerald-600" : "text-rose-600"}`}>
+              {successMessage}
+            </p>
+          )}
           <ul className="mt-3 space-y-2 text-sm text-slate-700">
             {history.length === 0 ? (
               <li className="rounded-xl bg-slate-50 px-3 py-2">No credit transactions yet.</li>
@@ -241,14 +255,31 @@ export default function ProfilePage() {
 
         <section className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
           <h2 className="text-sm font-semibold text-slate-900">Settings</h2>
+          {settingsComingSoon && (
+            <div className="mt-3">
+              <ComingSoonCard />
+            </div>
+          )}
           <div className="mt-3 flex flex-wrap gap-2">
-            <button type="button" className="rounded-full bg-slate-100 px-3 py-1.5 text-sm text-slate-700">
+            <button
+              type="button"
+              onClick={() => setSettingsComingSoon(true)}
+              className="rounded-full bg-slate-100 px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-200"
+            >
               Notification Preferences
             </button>
-            <button type="button" className="rounded-full bg-slate-100 px-3 py-1.5 text-sm text-slate-700">
+            <button
+              type="button"
+              onClick={() => setSettingsComingSoon(true)}
+              className="rounded-full bg-slate-100 px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-200"
+            >
               Learning Reminders
             </button>
-            <button type="button" className="rounded-full bg-slate-100 px-3 py-1.5 text-sm text-slate-700">
+            <button
+              type="button"
+              onClick={() => setSettingsComingSoon(true)}
+              className="rounded-full bg-slate-100 px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-200"
+            >
               Account Privacy
             </button>
             <button

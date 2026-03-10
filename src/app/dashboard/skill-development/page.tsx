@@ -20,6 +20,7 @@ export default function SkillDevelopmentPage() {
   const { catalog } = useCatalog();
   const marketplaceCourses = catalog?.courses ?? tracks;
   const [enrollments, setEnrollments] = useState<CourseEnrollmentItem[]>([]);
+  const [message, setMessage] = useState<string | null>(null);
 
   useEffect(() => {
     async function loadEnrollments() {
@@ -50,11 +51,13 @@ export default function SkillDevelopmentPage() {
     });
     const result = (await response.json()) as { ok: boolean; message?: string };
     if (!response.ok || !result.ok) {
-      alert(result.message || "Enrollment failed.");
+      setMessage(result.message || "Enrollment failed.");
+      setTimeout(() => setMessage(null), 4000);
       return;
     }
     await refreshUser();
-    alert(`Enrollment successful. ${cost} credits deducted.`);
+    setMessage(`Enrollment successful. ${cost} credits deducted.`);
+    setTimeout(() => setMessage(null), 4000);
   }
 
   async function addProgress(enrollmentId: string) {
@@ -65,7 +68,8 @@ export default function SkillDevelopmentPage() {
     });
     const result = (await response.json()) as { ok: boolean; message?: string };
     if (!response.ok || !result.ok) {
-      alert(result.message || "Unable to update progress.");
+      setMessage(result.message || "Unable to update progress.");
+      setTimeout(() => setMessage(null), 4000);
       return;
     }
     setEnrollments((prev) =>
@@ -79,6 +83,15 @@ export default function SkillDevelopmentPage() {
 
   return (
     <main className="space-y-4 px-4 py-5">
+      {message && (
+        <div
+          className={`rounded-xl border px-4 py-2 text-sm font-medium ${
+            message.includes("Unable") || message.includes("failed") ? "border-rose-200 bg-rose-50 text-rose-800" : "border-emerald-200 bg-emerald-50 text-emerald-800"
+          }`}
+        >
+          {message}
+        </div>
+      )}
       <section className="rounded-3xl bg-gradient-to-br from-cyan-500 to-blue-500 p-4 text-white shadow-md">
         <div className="flex items-center gap-2">
           <Sparkles size={18} />

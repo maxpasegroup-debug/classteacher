@@ -1,22 +1,11 @@
 import Header from "@/components/Header";
+import Link from "next/link";
 
 const institutions = [
-  {
-    title: "Roots World School",
-    description: "A K-12 school focused on academic excellence and values-based learning."
-  },
-  {
-    title: "Roots Tuition Centres",
-    description: "After-school coaching programs with personalized support across core subjects."
-  },
-  {
-    title: "ACE Allied Health College",
-    description: "Career-driven health education with practical training for modern care environments."
-  },
-  {
-    title: "MIPS Paramedical Institute",
-    description: "Specialized paramedical pathways designed for clinical readiness and confidence."
-  }
+  { slug: "world-school", title: "Roots World School", description: "A K-12 school focused on academic excellence and values-based learning." },
+  { slug: "tuition", title: "Roots Tuition Centres", description: "After-school coaching programs with personalized support across core subjects." },
+  { slug: "ace", title: "ACE Allied Health College", description: "Career-driven health education with practical training for modern care environments." },
+  { slug: "mips", title: "MIPS Paramedical Institute", description: "Specialized paramedical pathways designed for clinical readiness and confidence." }
 ];
 
 export default function ExplorePage() {
@@ -42,18 +31,18 @@ export default function ExplorePage() {
           <div className="-mx-4 flex snap-x snap-mandatory gap-3 overflow-x-auto px-4 pb-2 md:mx-0 md:grid md:snap-none md:overflow-visible md:px-0 md:pb-0 md:grid-cols-2 lg:grid-cols-3">
             {institutions.map((institution) => (
               <article
-                key={institution.title}
+                key={institution.slug}
                 className="w-[85%] shrink-0 snap-start rounded-3xl border border-slate-200 bg-white p-4 shadow-sm md:w-full md:shrink md:snap-none"
               >
                 <div className="h-36 rounded-2xl bg-gradient-to-br from-slate-100 to-slate-200 md:h-40" />
                 <h4 className="mt-4 text-base font-semibold text-slate-900">{institution.title}</h4>
                 <p className="mt-2 text-sm leading-5 text-slate-600">{institution.description}</p>
-                <button
-                  type="button"
-                  className="mt-4 rounded-full bg-slate-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-slate-800"
+                <Link
+                  href={`/explore/${institution.slug}`}
+                  className="mt-4 inline-block rounded-full bg-slate-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-slate-800"
                 >
                   Explore programs
-                </button>
+                </Link>
               </article>
             ))}
           </div>

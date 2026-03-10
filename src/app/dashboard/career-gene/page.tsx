@@ -26,6 +26,7 @@ export default function CareerGenePage() {
   const [profileStrengths, setProfileStrengths] = useState("Communication,Discipline");
   const [budgetBand, setBudgetBand] = useState("Medium");
   const [timeline, setTimeline] = useState("Within 6 months");
+  const [message, setMessage] = useState<string | null>(null);
 
   useEffect(() => {
     async function loadCareerData() {
@@ -65,7 +66,8 @@ export default function CareerGenePage() {
     });
     const result = (await response.json()) as { ok: boolean; message?: string };
     if (!response.ok || !result.ok) {
-      alert(result.message || "Unable to start assessment.");
+      setMessage(result.message || "Unable to start assessment.");
+      setTimeout(() => setMessage(null), 4000);
       return;
     }
     await refreshUser();
@@ -81,7 +83,8 @@ export default function CareerGenePage() {
       const data = (await planResponse.json()) as { plan: CareerGuidancePlan };
       setPlan(data.plan || null);
     }
-    alert(`Career Gene assessment started. ${cost} credits deducted.`);
+    setMessage(`Career Gene assessment started. ${cost} credits deducted.`);
+    setTimeout(() => setMessage(null), 4000);
   }
 
   async function saveCareerProfile() {
@@ -100,7 +103,8 @@ export default function CareerGenePage() {
     });
     const result = (await response.json()) as { ok: boolean; message?: string };
     if (!response.ok || !result.ok) {
-      alert(result.message || "Unable to save profile.");
+      setMessage(result.message || "Unable to save profile.");
+      setTimeout(() => setMessage(null), 4000);
       return;
     }
     const planResponse = await fetch("/api/career/plan");
@@ -108,11 +112,21 @@ export default function CareerGenePage() {
       const data = (await planResponse.json()) as { plan: CareerGuidancePlan };
       setPlan(data.plan || null);
     }
-    alert("Career profile updated.");
+    setMessage("Career profile updated.");
+    setTimeout(() => setMessage(null), 3000);
   }
 
   return (
     <main className="space-y-4 px-4 py-5">
+      {message && (
+        <div
+          className={`rounded-xl border px-4 py-2 text-sm font-medium ${
+            message.includes("Unable") ? "border-rose-200 bg-rose-50 text-rose-800" : "border-emerald-200 bg-emerald-50 text-emerald-800"
+          }`}
+        >
+          {message}
+        </div>
+      )}
       <section className="rounded-3xl bg-gradient-to-br from-teal-500 to-emerald-500 p-4 text-white shadow-md">
         <div className="flex items-center gap-2">
           <BriefcaseBusiness size={18} />

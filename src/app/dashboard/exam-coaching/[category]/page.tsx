@@ -28,6 +28,11 @@ const categoryMeta: Record<
     subtitle: "KEAM and other Kerala-focused exams",
     exams: "KEAM • Kerala state-level exams"
   },
+  keam: {
+    title: "KEAM Coaching",
+    subtitle: "Kerala Engineering, Architecture & Medical entrance",
+    exams: "KEAM • Kerala state-level exams"
+  },
   national: {
     title: "National Exams Coaching",
     subtitle: "CUET, NDA, CLAT and allied tests",
@@ -48,7 +53,7 @@ const categoryMeta: Record<
 export default function ExamCoachingCategoryPage() {
   const params = useParams<{ category: string }>();
   const router = useRouter();
-  const categoryKey = params.category || "engineering";
+  const categoryKey = (params.category || "engineering") as string;
   const meta = categoryMeta[categoryKey] ?? categoryMeta.engineering;
 
   return (

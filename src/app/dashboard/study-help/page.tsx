@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { MessageCircleQuestion, PenLine, Sparkles, Users } from "lucide-react";
+import ComingSoonCard from "@/components/ComingSoonCard";
 import { useAppSession } from "@/components/providers/AppSessionProvider";
 import { useCatalog } from "@/hooks/useCatalog";
 import { StudyHelpSlot } from "@/lib/contracts";
@@ -22,6 +23,8 @@ export default function StudyHelpPage() {
   const [selectedPlanId, setSelectedPlanId] = useState(plans[0]?.id || "sh-hourly");
   const [slots, setSlots] = useState<StudyHelpSlot[]>([]);
   const [selectedSlotId, setSelectedSlotId] = useState<string>("");
+  const [bookingMessage, setBookingMessage] = useState<string | null>(null);
+  const [showAIComingSoon, setShowAIComingSoon] = useState(false);
 
   useEffect(() => {
     if (plans.length && !plans.some((plan) => plan.id === selectedPlanId)) {
@@ -55,7 +58,8 @@ export default function StudyHelpPage() {
   async function startBooking(planId: string, cost: number) {
     if (!requireAuth()) return;
     if (!selectedSlotId) {
-      alert("Please select an available slot.");
+      setBookingMessage("Please select an available slot.");
+      setTimeout(() => setBookingMessage(null), 3000);
       return;
     }
     const response = await fetch("/api/actions/study-help-booking", {
@@ -65,13 +69,15 @@ export default function StudyHelpPage() {
     });
     const result = (await response.json()) as { ok: boolean; message?: string };
     if (!response.ok || !result.ok) {
-      alert(result.message || "Booking failed.");
+      setBookingMessage(result.message || "Booking failed.");
+      setTimeout(() => setBookingMessage(null), 4000);
       return;
     }
     await refreshUser();
     setSlots((prev) => prev.filter((slot) => slot.id !== selectedSlotId));
     setSelectedSlotId("");
-    alert(`Booking confirmed. ${cost} credits deducted.`);
+    setBookingMessage(`Booking confirmed. ${cost} credits deducted.`);
+    setTimeout(() => setBookingMessage(null), 4000);
   }
 
   return (
@@ -166,14 +172,24 @@ export default function StudyHelpPage() {
           Custom trained for your profile: {user?.className || "Class 10 | CBSE"} and goal{" "}
           {user?.goal || "master algebra this week"}.
         </p>
+        {showAIComingSoon && (
+          <div className="mt-3">
+            <ComingSoonCard />
+          </div>
+        )}
         <button
           type="button"
-          onClick={() => requireAuth() && alert("AI tutor session started.")}
+          onClick={() => (requireAuth() ? setShowAIComingSoon(true) : null)}
           className="mt-3 rounded-full bg-cyan-700 px-3 py-1.5 text-xs font-semibold text-white"
         >
           {user ? "Ask AI Tutor" : "Create account to ask AI"}
         </button>
       </section>
+      {bookingMessage && (
+        <p className={`text-center text-sm font-medium ${bookingMessage.startsWith("Booking confirmed") ? "text-emerald-600" : "text-rose-600"}`}>
+          {bookingMessage}
+        </p>
+      )}
 
       <Link
         href="/dashboard"
